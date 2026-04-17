@@ -5,6 +5,22 @@
 ### Added
 
 - [[#254](https://github.com/rust-vmm/vmm-sys-util/pull/254)]: Support `TFD_NONBLOCK` for `timerfd::TimerFd`.
+- Add macOS compatibility shims for the Linux `epoll` and `eventfd`
+  APIs (`macos::epoll` backed by `kqueue`, `macos::eventfd` backed by
+  a pipe pair), adapted from the libkrun project. Re-exported at the
+  crate root on `target_os = "macos"` so that `vmm_sys_util::epoll`
+  and `vmm_sys_util::eventfd` are available there.
+
+  This is a prerequisite for building the rust-vmm `vhost` and
+  `vhost-user-backend` crates on macOS: both expose `vmm_sys_util`
+  types in their public API (e.g. `VhostBackend::set_vring_call`,
+  `set_vring_kick`, `set_vring_err` each take `&EventFd`;
+  `VhostUserBackend::handle_event` receives an `EventSet`; the
+  internal vring event loop in `vhost-user-backend` is driven by
+  `Epoll` / `EpollEvent` / `ControlOperation`). Without a macOS
+  implementation in `vmm-sys-util`, those crates do not compile on
+  macOS, which in turn blocks downstream vhost-user daemons such as
+  virtiofsd from running there.
 
 ## v0.15.0
 
